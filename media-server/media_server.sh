@@ -1,4 +1,4 @@
-# Copyright (C) <year> RidgeRun, LLC (http://www.ridgerun.com)
+# Copyright (C) 2021 RidgeRun, LLC (http://www.ridgerun.com)
 #
 # Author: Fabian Solano <fabian.solano@ridgerun.com>
 # 
