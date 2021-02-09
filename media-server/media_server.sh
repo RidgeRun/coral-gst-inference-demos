@@ -4,21 +4,31 @@ source config.txt
 # Create pipelines
 echo "Creating camera pipeline"
 gstd-client pipeline_create cam_pipe v4l2src device=$CAMERA \
-! "video/x-raw, width=1280, height=720" \
+! video/x-raw, width=$CAMERA_WIDTH, height=$CAMERA_HEIGHT \
 ! interpipesink name=cam_pipe_src sync=false async=false
 
+echo "Creating inference pipeline"
+gstd-client pipeline_create inference_pipe interpipesrc name=inf_sink \
+listen-to=cam_pipe_src ! videoconvert ! tee name=t t. ! videoscale ! \
+queue ! net.sink_model t. ! queue ! net.sink_bypass \
+tinyyolov3 name=net model-location=$MODEL_LOCATION backend=tensorflow \
+backend::input-layer=$INPUT_LAYER backend::output-layer=$OUTPUT_LAYER \
+net.src_bypass ! detectionoverlay labels="$(cat $LABELS)" font-scale=1 thickness=2 \
+! videoconvert ! interpipesink name=inf_src sync=false async=false
+
 echo "Creating display pipeline"
-gstd-client pipeline_create show_pipe interpipesrc name=show_sink listen-to=cam_pipe_src \
+gstd-client pipeline_create show_pipe interpipesrc name=show_sink listen-to=inf_src \
 ! videoconvert ! xvimagesink sync=false async=false
 
 echo "Creating record pipeline"
-gstd-client pipeline_create record_pipe interpipesrc name=record_sink listen-to=cam_pipe_src \
+gstd-client pipeline_create record_pipe interpipesrc name=record_sink listen-to=inf_src \
 ! videoconvert ! x264enc ! h264parse \
 ! qtmux ! filesink location=$OUTPUT_FILE
 
 # Start all pipelines
 echo "Starting pipelines"
 gstd-client pipeline_play cam_pipe
+gstd-client pipeline_play inference_pipe
 
 echo "Play show"
 gstd-client pipeline_play show_pipe
@@ -35,10 +45,12 @@ save_recording (){
 
 free_pipelines (){
     gstd-client pipeline_stop cam_pipe
+    gstd-client pipeline_stop inference_pipe
     gstd-client pipeline_stop record_pipe
     gstd-client pipeline_stop show_pipe
 
     gstd-client pipeline_delete cam_pipe
+    gstd-client pipeline_delete inference_pipe
     gstd-client pipeline_delete record_pipe
     gstd-client pipeline_delete show_pipe
 }
