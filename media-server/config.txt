@@ -7,4 +7,5 @@ OUTPUT_LAYER='output_boxes'
 LABELS='labels.txt'
 OUTPUT_FILE='recording.mp4'
 HOST=localhost
-PORT=5005
+PORT=5000
+RTSP_URI='rtsp://localhost:5005/stream1'
