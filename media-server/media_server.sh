@@ -5,16 +5,16 @@ source config.txt
 echo "Creating camera pipeline"
 gstd-client pipeline_create cam_pipe v4l2src device=$CAMERA \
 ! video/x-raw, width=$CAMERA_WIDTH, height=$CAMERA_HEIGHT, \
-framerate=10/1, format=YUY2 \
+framerate=10/1, format=$CAMERA_FORMAT ! videoconvert \
+! video/x-raw, format=Y42B \
 ! interpipesink name=cam_pipe_src sync=false async=false
 
-#echo "Creating input stream pipeline"
+echo "Creating input stream pipeline"
 gstd-client pipeline_create in_stream_pipe rtspsrc \
-location=$RTSP_URI ! rtph264depay ! decodebin ! queue ! videoconvert \
+location=$RTSP_URI ! rtph264depay ! h264parse ! avdec_h264 ! queue \
 ! interpipesink name=in_stream_pipe_src sync=false async=false
 
 echo -e "Creating inference pipeline with model: $MODEL_LOCATION"
-
 gstd-client pipeline_create inference_pipe interpipesrc name=inf_sink \
 listen-to=cam_pipe_src ! videoconvert ! tee name=t t. ! videoscale ! \
 queue ! net.sink_model t. ! queue ! net.sink_bypass \
@@ -22,9 +22,6 @@ tinyyolov3 name=net model-location=$MODEL_LOCATION backend=tensorflow \
 backend::input-layer=$INPUT_LAYER backend::output-layer=$OUTPUT_LAYER \
 net.src_bypass ! detectionoverlay labels="$(cat $LABELS)" font-scale=1 thickness=2 \
 ! videoconvert ! interpipesink name=inf_src sync=false async=false
-
-
-
 
 echo "Creating display pipeline"
 gstd-client pipeline_create show_pipe interpipesrc name=show_sink listen-to=inf_src \

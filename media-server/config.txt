@@ -1,6 +1,7 @@
 CAMERA='/dev/video0'
 CAMERA_WIDTH=1280
 CAMERA_HEIGHT=720
+CAMERA_FORMAT=YUY2
 MODEL_LOCATION=graph_tinyyolov3_tensorflow.pb
 INPUT_LAYER='inputs'
 OUTPUT_LAYER='output_boxes'
