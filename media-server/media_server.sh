@@ -25,6 +25,11 @@ gstd-client pipeline_create record_pipe interpipesrc name=record_sink listen-to=
 ! videoconvert ! x264enc ! h264parse \
 ! qtmux ! filesink location=$OUTPUT_FILE
 
+echo "Creating streaming pipeline"
+gstd-client pipeline_create stream_pipe interpipesrc name=stream_sink listen-to=inf_src \
+! videoconvert ! x264enc tune=zerolatency ! h264parse \
+! mpegtsmux ! udpsink host=$HOST port=$PORT sync=false async=false
+
 # Start all pipelines
 echo "Starting pipelines"
 gstd-client pipeline_play cam_pipe
@@ -35,7 +40,8 @@ gstd-client pipeline_play show_pipe
 sleep 1 # Wait for pipeline initialization
 echo "Play record"
 gstd-client pipeline_play record_pipe
-
+echo "Play stream"
+gstd-client pipeline_play stream_pipe
 
 save_recording (){
     gstd-client event_eos record_pipe
@@ -48,11 +54,13 @@ free_pipelines (){
     gstd-client pipeline_stop inference_pipe
     gstd-client pipeline_stop record_pipe
     gstd-client pipeline_stop show_pipe
+    gstd-client pipeline_stop stream_pipe
 
     gstd-client pipeline_delete cam_pipe
     gstd-client pipeline_delete inference_pipe
     gstd-client pipeline_delete record_pipe
     gstd-client pipeline_delete show_pipe
+    gstd-client pipeline_delete stream_pipe
 }
 
 while true; do
