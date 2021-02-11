@@ -70,7 +70,7 @@ sleep 1 # Wait for pipeline initialization
 
 save_recording (){
     gstd-client event_eos record_pipe
-    gstd-client bus_filter record_pipe eos
+    timeout 5 gstd-client bus_filter record_pipe eos
     gstd-client bus_read record_pipe
 }
 
