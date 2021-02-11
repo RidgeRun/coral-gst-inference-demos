@@ -12,6 +12,15 @@
 # Load settings
 source config.txt
 
+gstd_not_found_msg="Could not connect to localhost: Connection refused"
+check_gstd=$(gstd-client list_pipelines  2>&1)
+
+# Verify if gstd is reachable
+if [[ $check_gstd == $gstd_not_found_msg ]] ; then
+    echo "Could not connect to gstd. Please check gstd is up and running."
+    exit
+fi
+
 # Create pipelines
 echo "Initializing camera capture"
 gstd-client pipeline_create cam_pipe v4l2src device=$CAMERA_DEVICE \
