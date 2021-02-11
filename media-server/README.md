@@ -52,10 +52,10 @@ To save the recording and exit the demo
 The demo produces a UDP output stream. To receive the output video the media server generates, the following pipeline can be used as a reference. Please adjust port as needed.
 
 ```bash
-gst-launch-1.0 udpsrc port=5050 ! queue  ! tsdemux ! h264parse ! avdec_h264 ! queue ! videoconvert ! autovideosink
+gst-launch-1.0 udpsrc port=5060 ! queue  ! tsdemux ! h264parse ! avdec_h264 ! queue ! videoconvert ! autovideosink
 ```
 
 It is also possible to access the streaming using VLC:
 ```bash
-vlc udp://@127.0.0.1:5050
+vlc udp://@127.0.0.1:5060
 ```
