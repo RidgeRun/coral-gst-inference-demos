@@ -37,7 +37,7 @@ location=$INPUT_RTSP_URI ! decodebin ! queue \
 ! interpipesink name=in_stream_pipe_src sync=false
 
 echo "Initializing inference capture with model: $MODEL_LOCATION"
-gstd-client pipeline_create inference_pipe interpipesrc name=inf_sink \
+gstd-client pipeline_create inference_pipe interpipesrc name=inf_input \
 listen-to=cam_pipe_src ! videoconvert ! tee name=t t. ! videoscale ! \
 queue ! net.sink_model t. ! queue ! net.sink_bypass \
 tinyyolov3 name=net model-location=$MODEL_LOCATION backend=tensorflow \
@@ -67,10 +67,6 @@ gstd-client pipeline_play inference_pipe
 echo "Start live preview"
 gstd-client pipeline_play show_pipe
 sleep 1 # Wait for pipeline initialization
-echo "Start record"
-gstd-client pipeline_play record_pipe
-echo "Start output RTSP stream"
-gstd-client pipeline_play stream_pipe
 
 save_recording (){
     gstd-client event_eos record_pipe
@@ -110,9 +106,13 @@ while true; do
         save_recording
         free_pipelines
         exit
-    elif [[ $usr_input == *"stream"* ]] ; then
-        gstd-client element_set inference_pipe inf_sink listen-to in_stream_pipe_src
-    elif [[ $usr_input == *"camera"* ]] ; then
-        gstd-client element_set inference_pipe inf_sink listen-to cam_pipe_src
+    elif [[ $usr_input == "stream" ]] ; then
+        gstd-client element_set inference_pipe inf_input listen-to in_stream_pipe_src
+    elif [[ $usr_input == "camera" ]] ; then
+        gstd-client element_set inference_pipe inf_input listen-to cam_pipe_src
+    elif [[ $usr_input == "start_streaming" ]] ; then
+        gstd-client pipeline_play stream_pipe
+    elif [[ $usr_input == "start_recording" ]] ; then
+        gstd-client pipeline_play record_pipe
     fi
 done
