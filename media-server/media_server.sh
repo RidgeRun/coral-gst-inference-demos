@@ -106,6 +106,15 @@ while true; do
         save_recording
         free_pipelines
         exit
+    elif [[ $usr_input == *"help"* ]] ; then
+cat << EOF
+exit: exit the media server and save recording
+help: shows this message
+stream: changes current output to stream source
+camera: changes current output to camera source
+start_streaming: start the output RTSP streaming
+start_recording: start the mp4 file recording
+EOF
     elif [[ $usr_input == "stream" ]] ; then
         gstd-client element_set inference_pipe inf_input listen-to in_stream_pipe_src
     elif [[ $usr_input == "camera" ]] ; then
