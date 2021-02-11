@@ -94,6 +94,15 @@ free_pipelines (){
     gstd-client pipeline_delete stream_pipe
 }
 
+trap_ctrlc() {
+    save_recording
+    free_pipelines
+    echo "Closing media server"
+    exit
+}
+
+trap trap_ctrlc INT
+
 while true; do
     read -p "> " usr_input
 
