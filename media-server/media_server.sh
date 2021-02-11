@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Copyright (C) 2021 RidgeRun, LLC (http://www.ridgerun.com)
 #
 # Author: Fabian Solano <fabian.solano@ridgerun.com>
@@ -12,15 +14,13 @@ source config.txt
 
 # Create pipelines
 echo "Creating camera pipeline"
-gstd-client pipeline_create cam_pipe v4l2src device=$CAMERA \
-! video/x-raw, width=$CAMERA_WIDTH, height=$CAMERA_HEIGHT, \
-framerate=10/1, format=$CAMERA_FORMAT ! videoconvert \
-! video/x-raw, format=Y42B \
+gstd-client pipeline_create cam_pipe v4l2src device=$CAMERA_DEVICE \
+! video/x-raw, width=$CAMERA_DEVICE_WIDTH, height=$CAMERA_DEVICE_HEIGHT \
 ! interpipesink name=cam_pipe_src sync=false async=false
 
 echo "Creating input stream pipeline"
 gstd-client pipeline_create in_stream_pipe rtspsrc \
-location=$RTSP_URI ! rtph264depay ! h264parse ! avdec_h264 ! queue \
+location=$INPUT_RTSP_URI ! rtph264depay ! h264parse ! avdec_h264 ! queue \
 ! interpipesink name=in_stream_pipe_src sync=false async=false
 
 echo -e "Creating inference pipeline with model: $MODEL_LOCATION"
@@ -44,7 +44,7 @@ gstd-client pipeline_create record_pipe interpipesrc name=record_sink listen-to=
 echo "Creating streaming pipeline"
 gstd-client pipeline_create stream_pipe interpipesrc name=stream_sink listen-to=inf_src \
 ! videoconvert ! x264enc tune=zerolatency ! h264parse \
-! mpegtsmux ! udpsink host=$HOST port=$PORT sync=false async=false
+! mpegtsmux ! udpsink host=$OUTPUT_HOST port=$OUTPUT_PORT sync=false async=false
 
 # Start all pipelines
 echo "Starting pipelines"
