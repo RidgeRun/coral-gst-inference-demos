@@ -25,15 +25,13 @@ fi
 echo "Initializing camera capture"
 gstd-client pipeline_create cam_pipe v4l2src device=$CAMERA_DEVICE \
 ! video/x-raw, width=$CAMERA_DEVICE_WIDTH, height=$CAMERA_DEVICE_HEIGHT \
-! videoconvert ! video/x-raw, format=I420 ! videoscale \
-! video/x-raw, width=640, height=480 \
+! videoscale ! videoconvert ! video/x-raw,width=640,height=480,format=I420 \
 ! interpipesink name=cam_pipe_src sync=false
 
 echo "Initializing RTSP streaming capture"
 gstd-client pipeline_create in_stream_pipe rtspsrc \
 location=$INPUT_RTSP_URI ! decodebin ! queue \
-! videoconvert ! video/x-raw, format=I420 ! videoscale \
-! video/x-raw, width=640, height=480 \
+! videoscale ! videoconvert ! video/x-raw,width=640,height=480,format=I420 \
 ! interpipesink name=in_stream_pipe_src sync=false
 
 echo "Initializing inference capture with model: $MODEL_LOCATION"
