@@ -18,7 +18,7 @@ check_gstd=$(gstd-client list_pipelines  2>&1)
 # Verify if gstd is reachable
 if [[ $check_gstd == $gstd_not_found_msg ]] ; then
     echo "Could not connect to gstd. Please check gstd is up and running."
-    exit
+    exit 1
 fi
 
 # Create pipelines
@@ -90,14 +90,14 @@ free_pipelines (){
     gstd-client pipeline_delete stream_pipe
 }
 
-trap_ctrlc() {
+trap_sigint() {
     save_recording
     free_pipelines
     echo "Closing media server"
     exit
 }
 
-trap trap_ctrlc INT
+trap trap_sigint SIGINT
 
 while true; do
     read -p "> " usr_input
@@ -114,6 +114,8 @@ stream: changes current output to stream source
 camera: changes current output to camera source
 start_streaming: start the output RTSP streaming
 start_recording: start the mp4 file recording
+stop_streaming: stops the output RTSP streaming
+stop_recording: stops the mp4 file recording
 EOF
     elif [[ $usr_input == "stream" ]] ; then
         gstd-client element_set inference_pipe inf_input listen-to in_stream_pipe_src
@@ -123,5 +125,9 @@ EOF
         gstd-client pipeline_play stream_pipe
     elif [[ $usr_input == "start_recording" ]] ; then
         gstd-client pipeline_play record_pipe
+    elif [[ $usr_input == "stop_streaming" ]] ; then
+        gstd-client pipeline_stop stream_pipe
+    elif [[ $usr_input == "stop_recording" ]] ; then
+        save_recording
     fi
 done
