@@ -70,7 +70,7 @@ save_recording (){
     gstd-client event_eos record_pipe
     gstd-client bus_filter record_pipe eos
     gstd-client bus_read record_pipe
-    gstd-client bus_timeout record_pipe 3
+    gstd-client bus_timeout record_pipe 5000000000
 }
 
 free_pipelines (){
