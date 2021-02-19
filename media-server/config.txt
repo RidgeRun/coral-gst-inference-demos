@@ -1,0 +1,11 @@
+CAMERA_DEVICE='/dev/video0'
+CAMERA_DEVICE_WIDTH=1280
+CAMERA_DEVICE_HEIGHT=720
+MODEL_LOCATION=/home/fsolano/work/devdirs/projects/GoogleCoral/coral-gst-inference-demos/media-server/graph_tinyyolov3_tensorflow.pb # Use absolute path.
+INPUT_LAYER='inputs'
+OUTPUT_LAYER='output_boxes'
+LABELS='labels.txt'
+OUTPUT_FILE='/home/fsolano/work/devdirs/projects/GoogleCoral/coral-gst-inference-demos/media-server/recording.mp4' # Only mp4 is supported by demo. Use absolute path.
+OUTPUT_HOST=localhost
+OUTPUT_PORT=5060
+INPUT_RTSP_URI='rtspt://170.93.143.139/rtplive/1701519c02510075004d823633235daa'
