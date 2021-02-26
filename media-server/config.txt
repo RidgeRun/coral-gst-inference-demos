@@ -1,10 +1,10 @@
 CAMERA_DEVICE='/dev/video0'
 CAMERA_DEVICE_WIDTH=1280
 CAMERA_DEVICE_HEIGHT=720
-MODEL_LOCATION=/home/fsolano/work/devdirs/projects/GoogleCoral/coral-gst-inference-demos/media-server/graph_tinyyolov3_tensorflow.pb # Use absolute path.
-INPUT_LAYER='inputs'
-OUTPUT_LAYER='output_boxes'
-LABELS='labels.txt'
+MODEL_LOCATION=/home/fsolano/work/devdirs/projects/GoogleCoral/coral-gst-inference-demos/media-server/mobilenet_v2_1.0_224_quant_edgetpu.tflite # Use absolute path.
+INPUT_LAYER='input'
+OUTPUT_LAYER='MobilenetV2/Predictions/Reshape_1'
+LABELS='imagenet_labels.txt'
 OUTPUT_FILE='/home/fsolano/work/devdirs/projects/GoogleCoral/coral-gst-inference-demos/media-server/recording.mp4' # Only mp4 is supported by demo. Use absolute path.
 OUTPUT_HOST=localhost
 OUTPUT_PORT=5060
