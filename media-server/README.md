@@ -12,6 +12,11 @@ The demo uses two RidgeRun open source projects. Please make sure you install an
 * [GStreamer Daemon](https://developer.ridgerun.com/wiki/index.php?title=GStreamer_Daemon_-_Building_GStreamer_Daemon)
 * [GStreamer Interpipes](https://developer.ridgerun.com/wiki/index.php?title=GstInterpipe_-_Building_and_Installation_Guide)
 
+The demo requires the model and labels file from Coral which can be downloaded from:
+
+[https://coral.ai/models/](https://coral.ai/models/)
+
+Update the paths to model and labels file on ``config.txt`` file. It uses by default ``mobilenet_v2_1.0_224_quant_edgetpu.tflite`` and ``imagenet_labels.txt``.
 
 ## Demo Execution
 
