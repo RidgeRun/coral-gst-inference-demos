@@ -1,11 +1,11 @@
 CAMERA_DEVICE='/dev/video0'
 CAMERA_DEVICE_WIDTH=1280
 CAMERA_DEVICE_HEIGHT=720
-MODEL_LOCATION=/home/fsolano/work/devdirs/projects/GoogleCoral/coral-gst-inference-demos/media-server/mobilenet_v2_1.0_224_quant_edgetpu.tflite # Use absolute path.
+MODEL_LOCATION=/home/coral/mobilenet_v2_1.0_224_quant_edgetpu.tflite # Use absolute path.
 INPUT_LAYER='input'
 OUTPUT_LAYER='MobilenetV2/Predictions/Reshape_1'
-LABELS='imagenet_labels.txt'
-OUTPUT_FILE='/home/fsolano/work/devdirs/projects/GoogleCoral/coral-gst-inference-demos/media-server/recording.mp4' # Only mp4 is supported by demo. Use absolute path.
+LABELS='imagenet_labels.txt' # File should change according to model used
+OUTPUT_FILE='/home/coral/recording.mp4' # Only mp4 is supported by demo. Use absolute path.
 OUTPUT_HOST=localhost
 OUTPUT_PORT=5060
 INPUT_RTSP_URI='rtspt://170.93.143.139/rtplive/1701519c02510075004d823633235daa'
