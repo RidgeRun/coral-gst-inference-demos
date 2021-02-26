@@ -38,9 +38,9 @@ echo "Initializing inference capture with model: $MODEL_LOCATION"
 gstd-client pipeline_create inference_pipe interpipesrc name=inf_input \
 listen-to=cam_pipe_src ! videoconvert ! tee name=t t. ! videoscale ! \
 queue ! net.sink_model t. ! queue ! net.sink_bypass mobilenetv2 name=net \
-model-location=$MODEL_LOCATION backend=coral backend::input-layer=$INPUT_LAYER \
+labels=\"$(awk '{$1=""; printf "\%s\;",$0}' $LABELS)\" model-location=$MODEL_LOCATION backend=coral backend::input-layer=$INPUT_LAYER \
 backend::output-layer=$OUTPUT_LAYER net.src_bypass ! \
-classificationoverlay ! videoconvert ! \
+inferenceoverlay ! videoconvert ! \
 interpipesink name=inf_src sync=false
 
 echo "Creating display pipeline"
