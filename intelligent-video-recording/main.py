@@ -51,10 +51,10 @@ class GstDisplay(QWidget):
         super(GstDisplay, self).__init__()
 
         # Get demo settings
+        video_dev = config['DEMO_SETTINGS']['CAMERA_DEVICE']
         model = config['DEMO_SETTINGS']['MODEL_LOCATION']
         input_layer = config['DEMO_SETTINGS']['INPUT_LAYER']
         output_layer = config['DEMO_SETTINGS']['OUTPUT_LAYER']
-
         labels= parseLabels(config['DEMO_SETTINGS']['LABELS'])
 
         pipe = "v4l2src device=%s ! videoscale ! videoconvert ! \
@@ -65,7 +65,7 @@ class GstDisplay(QWidget):
                 backend::input-layer=%s backend::output-layer=%s \
                 net.src_bypass ! inferenceoverlay ! videoconvert ! \
                 autovideosink name=videosink sync=false " % \
-                (input_video,labels,model,input_layer,output_layer)
+                (video_dev,labels,model,input_layer,output_layer)
 
         # Create GStreamer pipeline
         self.pipeline = Gst.parse_launch(pipe)
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     # Parse options
     def help():
         """Print demo usage information"""
-        print("Usage: python3 main.py -i <video-device>",
+        print("Usage: python3 main.py",
               file=sys.stderr)
         sys.exit(1)
 
@@ -184,21 +184,11 @@ if __name__ == "__main__":
         print(err, file=sys.stderr)
         help()
 
-    input_video = ""
-
     for opt, arg in opts:
         if (opt in ("-h", "--help")):
             help()
-        elif (opt in ("-i", "--input")):
-            if (os.path.exists(arg)):
-                input_video = arg
-            else:
-                print("File %s does not exist" % arg, file=sys.stderr)
-
-    if (input_video == ""):
-        help()
 
     MainEvntHndlr = QApplication([])
-    MainApp = MainWindow(input_video)
+    MainApp = MainWindow("input_video")
     MainApp.show()
     MainEvntHndlr.exec()
