@@ -10,6 +10,7 @@ a software license from RidgeRun.  All source code changes must be provided
 back to RidgeRun without any encumbrance.
 """
 
+import configparser
 import getopt
 import os
 import sys
@@ -28,20 +29,51 @@ Gst.init(None)
 # 1s
 STATE_CHANGE_TIMEOUT = 1000000000
 
+config = configparser.ConfigParser()
+config.read('config.cfg')
+
+def parseLabels(file):
+    """Parse labels to format supported by GstInference"""
+    labels = ""
+
+    with open(file) as fp:
+        lines = fp.readlines()
+        for line in lines:
+            tmp = line.split("  ")[1].split("\n")[0]
+            labels += tmp + ";"
+
+    return labels
+
 class GstDisplay(QWidget):
     """Widget to hold the gstreamer pipeline output"""
 
     def __init__(self, input_video):
         super(GstDisplay, self).__init__()
-        # Create pipeline
-        self.pipeline = Gst.parse_launch(
-            "v4l2src device=%s ! videoscale ! videoconvert ! \
-             video/x-raw,width=640,height=480,format=I420 ! \
-             autovideosink name=videosink" % input_video)
+
+        # Get demo settings
+        model = config['DEMO_SETTINGS']['MODEL_LOCATION']
+        input_layer = config['DEMO_SETTINGS']['INPUT_LAYER']
+        output_layer = config['DEMO_SETTINGS']['OUTPUT_LAYER']
+
+        labels= parseLabels(config['DEMO_SETTINGS']['LABELS'])
+
+        pipe = "v4l2src device=%s ! videoscale ! videoconvert ! \
+                video/x-raw,width=640,height=480,format=I420 ! \
+                videoconvert ! tee name=t t. ! videoscale ! \
+                queue ! net.sink_model t. ! queue ! net.sink_bypass \
+                mobilenetv2 name=net labels=\"%s\" model-location=%s backend=coral \
+                backend::input-layer=%s backend::output-layer=%s \
+                net.src_bypass ! inferenceoverlay ! videoconvert ! \
+                autovideosink name=videosink sync=false " % \
+                (input_video,labels,model,input_layer,output_layer)
+
+        # Create GStreamer pipeline
+        self.pipeline = Gst.parse_launch(pipe)
 
         if (not self.pipeline):
             print("Unable to create pipeline", file=sys.stderr)
             sys.exit(1)
+
         # Setup pipeline signals and output window
         self.windowId = self.winId()
         self.setupPipeline()
