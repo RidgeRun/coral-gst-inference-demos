@@ -29,6 +29,7 @@ Gst.init(None)
 # 1s
 STATE_CHANGE_TIMEOUT = 1000000000
 
+# Create config object and load file
 config = configparser.ConfigParser()
 config.read('config.cfg')
 
@@ -47,7 +48,7 @@ def parseLabels(file):
 class GstDisplay(QWidget):
     """Widget to hold the gstreamer pipeline output"""
 
-    def __init__(self, input_video):
+    def __init__(self):
         super(GstDisplay, self).__init__()
 
         # Get demo settings
@@ -136,10 +137,10 @@ class GstDisplay(QWidget):
 class MainWidget(QWidget):
     """Central widget to place every other widget on"""
 
-    def __init__(self, input_video):
+    def __init__(self):
         super(MainWidget, self).__init__()
         # Create gstreamer pipeline output
-        self.gstDisplay = GstDisplay(input_video)
+        self.gstDisplay = GstDisplay()
         # Remove any border keep video coordinates
         vBox = QVBoxLayout()
         vBox.setContentsMargins(0, 0, 0, 0)
@@ -149,11 +150,11 @@ class MainWidget(QWidget):
 class MainWindow(QMainWindow):
     """Main application window"""
 
-    def __init__(self, input_video):
+    def __init__(self):
         super(MainWindow, self).__init__()
         self.setWindowTitle("Intelligent Video Recording Demo")
         # Set main widget to add layouts on top of it
-        self.mainWidget = MainWidget(input_video)
+        self.mainWidget = MainWidget()
         self.setCentralWidget(self.mainWidget)
 
         # Move window to center and resize according to input video size
@@ -174,8 +175,7 @@ if __name__ == "__main__":
     # Parse options
     def help():
         """Print demo usage information"""
-        print("Usage: python3 main.py",
-              file=sys.stderr)
+        print("Usage: python3 main.py", file=sys.stderr)
         sys.exit(1)
 
     try:
@@ -189,6 +189,6 @@ if __name__ == "__main__":
             help()
 
     MainEvntHndlr = QApplication([])
-    MainApp = MainWindow("input_video")
+    MainApp = MainWindow()
     MainApp.show()
     MainEvntHndlr.exec()
