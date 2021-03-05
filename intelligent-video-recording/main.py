@@ -25,10 +25,6 @@ Gst.init(None)
 # 1s
 STATE_CHANGE_TIMEOUT = 1000000000
 
-# Create config object and load file
-config = configparser.ConfigParser()
-config.read('config.cfg')
-
 def parseLabels(file):
     """Parse labels to format supported by GstInference"""
     labels = ""
@@ -44,15 +40,23 @@ def parseLabels(file):
 class GstDisplay(QWidget):
     """Widget to hold the gstreamer pipeline output"""
 
-    def __init__(self):
+    def __init__(self, config_file_name):
         super(GstDisplay, self).__init__()
 
+        # Create config object and load file
+        config = configparser.ConfigParser()
+        config.read(config_file_name)
+
         # Get demo settings
-        video_dev = config['DEMO_SETTINGS']['CAMERA_DEVICE']
-        model = config['DEMO_SETTINGS']['MODEL_LOCATION']
-        input_layer = config['DEMO_SETTINGS']['INPUT_LAYER']
-        output_layer = config['DEMO_SETTINGS']['OUTPUT_LAYER']
-        labels= parseLabels(config['DEMO_SETTINGS']['LABELS'])
+        try:
+            video_dev = config['DEMO_SETTINGS']['CAMERA_DEVICE']
+            model = config['DEMO_SETTINGS']['MODEL_LOCATION']
+            input_layer = config['DEMO_SETTINGS']['INPUT_LAYER']
+            output_layer = config['DEMO_SETTINGS']['OUTPUT_LAYER']
+            labels= parseLabels(config['DEMO_SETTINGS']['LABELS'])
+        except KeyError:
+            print("Config file does not have correct format")
+            exit(1)
 
         pipe = "v4l2src device=%s ! videoscale ! videoconvert ! \
                 video/x-raw,width=640,height=480,format=I420 ! \
@@ -133,10 +137,10 @@ class GstDisplay(QWidget):
 class MainWidget(QWidget):
     """Central widget to place every other widget on"""
 
-    def __init__(self):
+    def __init__(self, config_file_name):
         super(MainWidget, self).__init__()
         # Create gstreamer pipeline output
-        self.gstDisplay = GstDisplay()
+        self.gstDisplay = GstDisplay(config_file_name)
         # Remove any border keep video coordinates
         vBox = QVBoxLayout()
         vBox.setContentsMargins(0, 0, 0, 0)
@@ -146,11 +150,11 @@ class MainWidget(QWidget):
 class MainWindow(QMainWindow):
     """Main application window"""
 
-    def __init__(self):
+    def __init__(self, config_file_name):
         super(MainWindow, self).__init__()
         self.setWindowTitle("Intelligent Video Recording Demo")
         # Set main widget to add layouts on top of it
-        self.mainWidget = MainWidget()
+        self.mainWidget = MainWidget(config_file_name)
         self.setCentralWidget(self.mainWidget)
 
         # Move window to center and resize according to input video size
@@ -171,20 +175,30 @@ if __name__ == "__main__":
     # Parse options
     def help():
         """Print demo usage information"""
-        print("Usage: python3 main.py", file=sys.stderr)
+        print("Usage: python3 main.py -c <path-to-config>.cfg", file=sys.stderr)
         sys.exit(1)
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hi:", ["help", "input="])
+        opts, args = getopt.getopt(sys.argv[1:], "hc:", ["help", "input="])
     except getopt.GetoptError as err:
         print(err, file=sys.stderr)
         help()
 
+    config_file_name = ""
+
     for opt, arg in opts:
         if (opt in ("-h", "--help")):
             help()
+        elif (opt in ("-c", "--config")):
+            if (os.path.exists(arg)):
+                config_file_name = arg
+            else:
+                print("No such file or directory: %s" % arg, file=sys.stderr)
+
+    if (config_file_name == ""):
+        help()
 
     MainEvntHndlr = QApplication([])
-    MainApp = MainWindow()
+    MainApp = MainWindow(config_file_name)
     MainApp.show()
     MainEvntHndlr.exec()
