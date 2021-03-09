@@ -14,8 +14,16 @@ gi.require_version("GstVideo", "1.0")
 from gi.repository import Gst, GObject, GstVideo
 from PyQt5.QtWidgets import QWidget
 
+from ctypes import Structure, POINTER, CDLL, addressof, sizeof, memmove, byref, cast
+from ctypes import c_uint, c_int, c_float, c_ulong, c_void_p, c_bool
+
 GObject.threads_init()
 Gst.init(None)
+
+class Prediction(Structure):
+    _fields_ = [
+        ("id", c_float)
+    ]
 
 class GstDisplay(QWidget):
     """Widget to hold the gstreamer pipeline output"""
@@ -65,6 +73,9 @@ class GstDisplay(QWidget):
         # Play pipeline
         self.playing = False
         self.togglePipelineState()
+        self.net = self.pipeline.get_by_name("net")
+        # Handle new prediction signal
+        self.net.connect("new-prediction", self.newPrediction)
 
     def parseLabels(self, file):
         """Parse labels to format supported by GstInference"""
@@ -77,6 +88,15 @@ class GstDisplay(QWidget):
                 labels += tmp + ";"
 
         return labels
+
+    def newPrediction(self, prediction, pred_size, meta, info, valid):
+
+        #pred = Prediction()
+        #pred["id"] = pred_size
+        pred = c_float()
+        #pred = cast(valid, POINTER(c_float))
+        memmove(pred, pred_size, 1)
+        print(pred)
 
     def setupPipeline(self):
         """Install bus and connect to the interesting signals"""
