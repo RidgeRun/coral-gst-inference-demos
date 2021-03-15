@@ -1,10 +1,11 @@
 CAMERA_DEVICE='/dev/video0'
 CAMERA_DEVICE_WIDTH=1280
 CAMERA_DEVICE_HEIGHT=720
-MODEL_LOCATION=/home/coral/mobilenet_v2_1.0_224_quant_edgetpu.tflite # Use absolute path.
+ARCH=mobilenetv2ssd
+MODEL_LOCATION=/home/coral/ssd_mobilenet_v2_coco_quant_postprocess_edgetpu.tflite # Use absolute path.
 INPUT_LAYER='input'
 OUTPUT_LAYER='MobilenetV2/Predictions/Reshape_1'
-LABELS='imagenet_labels.txt' # File should change according to model used
+LABELS='coco_labels.txt' # File should change according to model used
 OUTPUT_FILE='/home/coral/recording.mp4' # Only mp4 is supported by demo. Use absolute path.
 OUTPUT_HOST=localhost
 OUTPUT_PORT=5060

@@ -36,12 +36,10 @@ location=$INPUT_RTSP_URI ! decodebin ! queue \
 
 echo "Initializing inference capture with model: $MODEL_LOCATION"
 gstd-client pipeline_create inference_pipe interpipesrc name=inf_input \
-listen-to=cam_pipe_src ! videoconvert ! tee name=t t. ! videoscale ! \
-queue ! net.sink_model t. ! queue ! net.sink_bypass mobilenetv2 name=net \
-labels=\"$(awk '{$1=""; printf "\%s\;",$0}' $LABELS)\" model-location=$MODEL_LOCATION backend=coral backend::input-layer=$INPUT_LAYER \
-backend::output-layer=$OUTPUT_LAYER net.src_bypass ! \
-inferenceoverlay ! videoconvert ! \
-interpipesink name=inf_src sync=false
+listen-to=cam_pipe_src ! inferencebin arch=$ARCH backend=coral \
+model-location=$MODEL_LOCATION input-layer=$INPUT_LAYER output-layer=$OUTPUT_LAYER \
+labels="\"$(awk '{$1=""; printf "\%s\;",$0}' $LABELS)\"" overlay=true ! \
+videoconvert ! interpipesink name=inf_src sync=false
 
 echo "Creating display pipeline"
 gstd-client pipeline_create show_pipe interpipesrc name=show_sink listen-to=inf_src \
