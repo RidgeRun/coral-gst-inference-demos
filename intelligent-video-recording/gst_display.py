@@ -6,24 +6,19 @@ it under the terms of the GNU General Public License version 2 as
 published by the Free Software Foundation.
 """
 
+import ast
 import configparser
 
 import gi
 gi.require_version("Gst", "1.0")
 gi.require_version("GstVideo", "1.0")
 from gi.repository import Gst, GObject, GstVideo
+import json
 from PyQt5.QtWidgets import QWidget
 
-from ctypes import Structure, POINTER, CDLL, addressof, sizeof, memmove, byref, cast
-from ctypes import c_uint, c_int, c_float, c_ulong, c_void_p, c_bool
 
 GObject.threads_init()
 Gst.init(None)
-
-class Prediction(Structure):
-    _fields_ = [
-        ("id", c_float)
-    ]
 
 class GstDisplay(QWidget):
     """Widget to hold the gstreamer pipeline output"""
@@ -44,6 +39,8 @@ class GstDisplay(QWidget):
             input_layer = config['DEMO_SETTINGS']['INPUT_LAYER']
             output_layer = config['DEMO_SETTINGS']['OUTPUT_LAYER']
             labels= self.parseLabels(config['DEMO_SETTINGS']['LABELS'])
+            self.classes_id = ast.literal_eval(config['DEMO_SETTINGS']['CLASSES_ID'])
+            self.classes_probability = ast.literal_eval(config['DEMO_SETTINGS']['CLASSES_MIN_PROBABILITY'])
         except KeyError:
             print("Config file does not have correct format")
             exit(1)
@@ -75,7 +72,8 @@ class GstDisplay(QWidget):
         self.togglePipelineState()
         self.net = self.pipeline.get_by_name("net")
         # Handle new prediction signal
-        self.net.connect("new-prediction", self.newPrediction)
+        self.net.connect("string-inference", self.newPrediction)
+        self.flag=True
 
     def parseLabels(self, file):
         """Parse labels to format supported by GstInference"""
@@ -89,14 +87,19 @@ class GstDisplay(QWidget):
 
         return labels
 
-    def newPrediction(self, prediction, pred_size, meta, info, valid):
+    def newPrediction(self, element, meta):
+        data = json.loads(meta)
 
-        #pred = Prediction()
-        #pred["id"] = pred_size
-        pred = c_float()
-        #pred = cast(valid, POINTER(c_float))
-        memmove(pred, pred_size, 1)
-        print(pred)
+        # Parse class id from prediction
+        class_id = data["classes"][0]["Class"]
+        # Parse probability from prediction. Handle ',' float notation.
+        class_probability = float(data["classes"][0]["Probability"].replace(",","."))
+
+        if(class_id in self.classes_id):
+            min_prob = self.classes_probability[self.classes_id.index(class_id)]
+
+            if(class_probability >= min_prob):
+                print("Recording...")
 
     def setupPipeline(self):
         """Install bus and connect to the interesting signals"""
@@ -120,7 +123,7 @@ class GstDisplay(QWidget):
             1, Gst.Format.TIME, Gst.SeekFlags.FLUSH, Gst.SeekType.SET, 0,
             Gst.SeekType.SET, -1)
 
-    def togglePipelineState(self):
+    def togglePipelineState(self, pipe_to_toggle):
         """Change the pipeline from play to pause and from pause to play"""
         if (not self.playing):
             self.pipeline.set_state(Gst.State.PLAYING)
