@@ -6,17 +6,24 @@ The demo can switch between two origins (camera or RTSP stream) and produces 3 o
 
 ![Demo Pipeline Structure](rsrc/demo.png?raw=true "Demo Pipeline Structure")
 
+The demo currently supports both classification with MobileNetV2 and detection
+with MobileNetV2 + SSD.
+
 ## Dependencies
 The demo uses two RidgeRun open source projects. Please make sure you install and setup the following dependencies before running the demo
 
 * [GStreamer Daemon](https://developer.ridgerun.com/wiki/index.php?title=GStreamer_Daemon_-_Building_GStreamer_Daemon)
 * [GStreamer Interpipes](https://developer.ridgerun.com/wiki/index.php?title=GstInterpipe_-_Building_and_Installation_Guide)
 
-The demo requires the model and labels file from Coral which can be downloaded from:
+The demo requires the models and labels files which can be downloaded from:
 
-[https://coral.ai/models/](https://coral.ai/models/)
+* MobileNetV2 (classification): [labels and model](https://coral.ai/models/)
+* MobileNetV2 + SSD (detection): [labels](https://developer.ridgerun.com/wiki/index.php?title=Coral_MobilenetV2SSD_COCO_labels) and [models](https://coral.ai/models/).
+In this case, you need to save the labels content into a file named ``coco_labels.txt``.
 
-Update the paths to model and labels file on ``config.txt`` file. It uses by default ``mobilenet_v2_1.0_224_quant_edgetpu.tflite`` and ``imagenet_labels.txt``.
+Choose a model architecture (``mobilenetv2`` or ``mobilenetv2ssd``) and update 
+the architecture and the paths to the model and labels file on ``config.txt`` 
+file. It uses by default ``mobilenetv2ssd``, ``ssd_mobilenet_v2_coco_quant_postprocess_edgetpu.tflite`` and ``coco_labels.txt``.
 
 ## Demo Execution
 
