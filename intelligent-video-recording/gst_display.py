@@ -38,13 +38,15 @@ class GstDisplay(QWidget):
             model = config['DEMO_SETTINGS']['MODEL_LOCATION']
             input_layer = config['DEMO_SETTINGS']['INPUT_LAYER']
             output_layer = config['DEMO_SETTINGS']['OUTPUT_LAYER']
-            labels= self.parseLabels(config['DEMO_SETTINGS']['LABELS'])
+            labels = self.parseLabels(config['DEMO_SETTINGS']['LABELS'])
+            output_file = config['DEMO_SETTINGS']['OUTPUT_FILE']
             self.classes_id = ast.literal_eval(config['DEMO_SETTINGS']['CLASSES_ID'])
             self.classes_probability = ast.literal_eval(config['DEMO_SETTINGS']['CLASSES_MIN_PROBABILITY'])
         except KeyError:
             print("Config file does not have correct format")
             exit(1)
 
+        # autovideosink name=videosink sync=false " % \
         pipe = "v4l2src device=%s ! videoscale ! videoconvert ! \
                 video/x-raw,width=640,height=480,format=I420 ! \
                 videoconvert ! tee name=t t. ! videoscale ! \
@@ -52,13 +54,24 @@ class GstDisplay(QWidget):
                 mobilenetv2 name=net labels=\"%s\" model-location=%s backend=coral \
                 backend::input-layer=%s backend::output-layer=%s \
                 net.src_bypass ! inferenceoverlay ! videoconvert ! \
-                autovideosink name=videosink sync=false " % \
+                interpipesink name=inference_src sync=false" % \
                 (video_dev,labels,model,input_layer,output_layer)
 
-        # Create GStreamer pipeline
-        self.pipeline = Gst.parse_launch(pipe)
+        pipe2 = "interpipesrc name=display_sink listen-to=inference_src ! \
+                 videoconvert ! autovideosink name=videosink sync=false"
+        
+        #pipe3 = "videotestsrc is-live=true ! \
+        pipe3 = "interpipesrc name=record_sink listen-to=inference_src is-live=true ! \
+                 videoconvert ! x264enc ! h264parse ! \
+                 qtmux ! queue ! filesink location=%s sync=false" % output_file
 
-        if (not self.pipeline):
+        # Create GStreamer pipeline
+        self.inference_pipe = Gst.parse_launch(pipe)
+        self.display_pipe = Gst.parse_launch(pipe2)
+        self.record_pipe = Gst.parse_launch(pipe3)
+
+        if (not self.display_pipe or not self.inference_pipe or
+            not self.record_pipe):
             print("Unable to create pipeline", file=sys.stderr)
             sys.exit(1)
 
@@ -66,14 +79,13 @@ class GstDisplay(QWidget):
         self.windowId = self.winId()
         self.setupPipeline()
         # Get imagesink Tracker element to further box appending
-        self.videosink = self.pipeline.get_by_name("videosink")
+        self.videosink = self.display_pipe.get_by_name("videosink")
         # Play pipeline
         self.playing = False
         self.togglePipelineState()
-        self.net = self.pipeline.get_by_name("net")
+        self.net = self.inference_pipe.get_by_name("net")
         # Handle new prediction signal
-        self.net.connect("string-inference", self.newPrediction)
-        self.flag=True
+        self.net.connect("new-inference-string", self.newPrediction)
 
     def parseLabels(self, file):
         """Parse labels to format supported by GstInference"""
@@ -103,7 +115,7 @@ class GstDisplay(QWidget):
 
     def setupPipeline(self):
         """Install bus and connect to the interesting signals"""
-        bus = self.pipeline.get_bus()
+        bus = self.display_pipe.get_bus()
         bus.add_signal_watch()
         bus.enable_sync_message_emission()
         # Callback for setting output window
@@ -119,17 +131,24 @@ class GstDisplay(QWidget):
     def onEOS(self, bus, msg):
         """Send a seek event to the pipeline to go to start position"""
         print("Restarting video")
-        self.pipeline.seek(
+        self.display_pipe.seek(
             1, Gst.Format.TIME, Gst.SeekFlags.FLUSH, Gst.SeekType.SET, 0,
             Gst.SeekType.SET, -1)
 
-    def togglePipelineState(self, pipe_to_toggle):
+    def togglePipelineState(self):
         """Change the pipeline from play to pause and from pause to play"""
         if (not self.playing):
-            self.pipeline.set_state(Gst.State.PLAYING)
+            self.inference_pipe.set_state(Gst.State.PLAYING)
+            self.display_pipe.set_state(Gst.State.PLAYING)
+            self.record_pipe.set_state(Gst.State.PLAYING)
         else:
-            self.pipeline.set_state(Gst.State.PAUSED)
-        self.pipeline.get_state(self.STATE_CHANGE_TIMEOUT)
+            self.inference_pipe.set_state(Gst.State.PAUSED)
+            self.display_pipe.set_state(Gst.State.PAUSED)
+            self.record_pipe.set_state(Gst.State.PAUSED)
+        
+        self.inference_pipe.get_state(self.STATE_CHANGE_TIMEOUT)
+        self.display_pipe.get_state(self.STATE_CHANGE_TIMEOUT)
+        self.record_pipe.get_state(self.STATE_CHANGE_TIMEOUT)
         self.playing = not self.playing
 
     def getVideoResolution(self):
@@ -148,5 +167,14 @@ class GstDisplay(QWidget):
 
     def stopPipeline(self):
         """Stop the pipeline by setting it to null state"""
-        self.pipeline.set_state(Gst.State.NULL)
-        self.pipeline.get_state(self.STATE_CHANGE_TIMEOUT)
+
+        self.record_pipe.send_event(Gst.Event.new_eos())
+        self.record_pipe.get_bus().timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.EOS)
+        self.record_pipe.set_state(Gst.State.NULL)
+        self.record_pipe.get_state(self.STATE_CHANGE_TIMEOUT)
+
+        self.display_pipe.set_state(Gst.State.NULL)
+        self.display_pipe.get_state(self.STATE_CHANGE_TIMEOUT)
+
+
+        print("stopped..")
