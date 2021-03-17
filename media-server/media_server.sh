@@ -21,6 +21,8 @@ if [[ $check_gstd == $gstd_not_found_msg ]] ; then
     exit 1
 fi
 
+need_save_recording="no"
+
 # Create pipelines
 echo "Initializing camera capture"
 gstd-client pipeline_create cam_pipe v4l2src device=$CAMERA_DEVICE \
@@ -65,10 +67,12 @@ gstd-client pipeline_play show_pipe
 sleep 1 # Wait for pipeline initialization
 
 save_recording (){
-    gstd-client event_eos record_pipe
-    gstd-client bus_filter record_pipe eos
-    gstd-client bus_read record_pipe
-    gstd-client bus_timeout record_pipe 5000000000
+    if [[ $need_save_recording == "yes" ]] ; then
+        gstd-client event_eos record_pipe
+        gstd-client bus_filter record_pipe eos
+        gstd-client bus_read record_pipe
+        gstd-client bus_timeout record_pipe 5000000000
+    fi
 }
 
 free_pipelines (){
@@ -122,6 +126,7 @@ EOF
         gstd-client pipeline_play stream_pipe
     elif [[ $usr_input == "start_recording" ]] ; then
         gstd-client pipeline_play record_pipe
+        need_save_recording="yes"
     elif [[ $usr_input == "stop_streaming" ]] ; then
         gstd-client pipeline_stop stream_pipe
     elif [[ $usr_input == "stop_recording" ]] ; then
