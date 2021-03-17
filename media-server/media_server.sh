@@ -47,7 +47,7 @@ gstd-client pipeline_create show_pipe interpipesrc name=show_sink listen-to=inf_
 
 echo "Creating record pipeline"
 gstd-client pipeline_create record_pipe interpipesrc name=record_sink listen-to=inf_src \
-! videoconvert ! x264enc ! h264parse \
+! videoconvert ! x264enc tune=zerolatency speed-preset=ultrafast ! h264parse \
 ! qtmux ! filesink location=$OUTPUT_FILE
 
 echo "Creating streaming pipeline"
