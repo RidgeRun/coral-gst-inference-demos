@@ -21,9 +21,8 @@ The demo requires the models and labels files which can be downloaded from:
 * MobileNetV2 + SSD (detection): [labels](https://developer.ridgerun.com/wiki/index.php?title=Coral_MobilenetV2SSD_COCO_labels) and [models](https://coral.ai/models/).
 In this case, you need to save the labels content into a file named ``coco_labels.txt``.
 
-Choose a model architecture (``mobilenetv2`` or ``mobilenetv2ssd``) and update 
-the architecture and the paths to the model and labels file on ``config.txt`` 
-file. It uses by default ``mobilenetv2ssd``, ``ssd_mobilenet_v2_coco_quant_postprocess_edgetpu.tflite`` and ``coco_labels.txt``.
+Choose a model architecture (``mobilenetv2`` or ``mobilenetv2ssd``) and update the paths to the model and labels file on the respective  ``config_classifier.txt`` or ``config_detector.txt`` configuration
+file. You can provide your own configuration file but keep in mind that it must have the same variables of the template configuration files we provide.
 
 ## Demo Execution
 
@@ -33,17 +32,23 @@ gstd
 ```
 
 ### Camera RTSP source video
-The demo expects a RTSP link at RTSP_URI (defined at config.txt).
+The demo expects a RTSP link at RTSP_URI (defined at the configuration file).
 You can modify the default one to test with your own. RidgeRun also offers a product with an easy to use GStreamer plugin to create a RTSP stream. More information [here](https://developer.ridgerun.com/wiki/index.php?title=GstRtspSink).
 
 
 After setting up the RTSP stream, run the script with:
 
 ```bash
-./media_server.sh
+./media_server.sh [CONFIG_FILE]
 ```
 
-You can change between sources by using the input 
+For example, to test the detection example run:
+
+```bash
+./media_server.sh config_detector.txt
+```
+
+Once the stream appears on the display you can change between sources by using the input 
 
 To change to the RTSP stream:
 ```bash
