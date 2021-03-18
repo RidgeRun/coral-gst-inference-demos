@@ -72,6 +72,7 @@ save_recording (){
         gstd-client bus_filter record_pipe eos
         gstd-client bus_read record_pipe
         gstd-client bus_timeout record_pipe 5000000000
+        need_save_recording="no"
     fi
 }
 
