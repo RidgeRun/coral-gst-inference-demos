@@ -10,7 +10,8 @@
 
 
 # Load settings
-source config.txt
+CONFIG_FILE=${1?"Usage: ./media_server.sh [CONFIG_FILE]"}
+source $CONFIG_FILE
 
 gstd_not_found_msg="Could not connect to localhost: Connection refused"
 check_gstd=$(gstd-client list_pipelines  2>&1)
