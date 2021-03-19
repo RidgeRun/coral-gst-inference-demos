@@ -9,13 +9,14 @@ published by the Free Software Foundation.
 import ast
 import configparser
 from datetime import datetime
+import json
+from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
+import time
+
 import gi
 gi.require_version("Gst", "1.0")
 gi.require_version("GstVideo", "1.0")
 from gi.repository import Gst, GObject, GstVideo
-import json
-from PyQt5.QtWidgets import QWidget
-import time
 
 
 GObject.threads_init()
@@ -26,6 +27,10 @@ class GstDisplay(QWidget):
 
     def __init__(self, config_file_name):
         super(GstDisplay, self).__init__()
+        self.layout = QVBoxLayout(self)
+
+        self.label = QLabel("Recording")
+        self.layout.addWidget(self.label)
 
         self.STATE_CHANGE_TIMEOUT = 1000000000
 
@@ -50,30 +55,30 @@ class GstDisplay(QWidget):
             print("Config file does not have correct format")
             exit(1)
 
-        pipe = "v4l2src device=%s ! videoscale ! videoconvert ! \
-                video/x-raw,width=640,height=480,format=I420 ! \
-                videoconvert ! tee name=t t. ! videoscale ! \
-                queue ! net.sink_model t. ! queue ! net.sink_bypass \
-                mobilenetv2 name=net labels=\"%s\" model-location=%s backend=coral \
-                backend::input-layer=%s backend::output-layer=%s \
-                net.src_bypass ! inferenceoverlay ! videoconvert ! \
-                clockoverlay valignment=bottom halignment=right ! \
-                interpipesink name=inference_src sync=false" % \
-                (video_dev,labels,model,input_layer,output_layer)
+        inference_pipe = "v4l2src device=%s ! videoscale ! videoconvert ! \
+                          video/x-raw,width=640,height=480,format=I420 ! \
+                          videoconvert ! tee name=t t. ! videoscale ! \
+                          queue ! net.sink_model t. ! queue ! net.sink_bypass \
+                          mobilenetv2 name=net labels=\"%s\" model-location=%s backend=coral \
+                          backend::input-layer=%s backend::output-layer=%s \
+                          net.src_bypass ! inferenceoverlay ! videoconvert ! \
+                          clockoverlay valignment=bottom halignment=right ! \
+                          interpipesink name=inference_src sync=false" % \
+                          (video_dev,labels,model,input_layer,output_layer)
 
-        pipe2 = "interpipesrc name=display_sink listen-to=inference_src ! \
-                 videoconvert ! autovideosink name=videosink sync=false"
+        display_pipe = "interpipesrc name=display_sink listen-to=inference_src ! \
+                        videoconvert ! autovideosink name=videosink sync=false"
 
         # Create GStreamer pipelines
-        self.inference_pipe = Gst.parse_launch(pipe)
-        self.display_pipe = Gst.parse_launch(pipe2)
+        self.inference_pipe = Gst.parse_launch(inference_pipe)
+        self.display_pipe = Gst.parse_launch(display_pipe)
 
         if (not self.display_pipe or not self.inference_pipe):
             print("Unable to create pipeline", file=sys.stderr)
             sys.exit(1)
 
         # Setup pipeline signals and output window
-        self.window_ID = self.winId()
+        self.window_id = self.winId()
         self.setupPipeline()
         # Get imagesink Tracker element to further box appending
         self.videosink = self.display_pipe.get_by_name("videosink")
@@ -137,10 +142,10 @@ class GstDisplay(QWidget):
             filename = of[0] + "_" + dt_string + "." + of[1]
 
             # Recording pipeline
-            pipe3 = "interpipesrc name=record_sink listen-to=inference_src format=3 ! \
-                     videoconvert ! avenc_mpeg2video ! mpegtsmux ! \
-                     filesink location=%s sync=false" % filename
-            self.record_pipe = Gst.parse_launch(pipe3)
+            recording_pipe = "interpipesrc name=record_sink listen-to=inference_src \
+                              format=3 ! videoconvert ! avenc_mpeg2video ! mpegtsmux ! \
+                              filesink location=%s sync=false" % filename
+            self.record_pipe = Gst.parse_launch(recording_pipe)
 
             self.record_pipe.set_state(Gst.State.PLAYING)
             self.record_pipe.get_state(self.STATE_CHANGE_TIMEOUT)
@@ -168,7 +173,7 @@ class GstDisplay(QWidget):
     def onSyncMessage(self, bus, msg):
         """Set pipeline output to qt window"""
         if msg.get_structure().get_name() == "prepare-window-handle":
-            msg.src.set_window_handle(self.window_ID)
+            msg.src.set_window_handle(self.window_id)
 
     def togglePipelineState(self):
         """Change the pipeline from play to pause and from pause to play"""
