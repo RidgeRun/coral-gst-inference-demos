@@ -63,7 +63,8 @@ class GstDisplay(QWidget):
                           mobilenetv2 name=net labels=\"%s\" model-location=%s backend=coral \
                           backend::input-layer=%s backend::output-layer=%s \
                           net.src_bypass ! inferenceoverlay ! videoconvert ! \
-                          clockoverlay valignment=bottom halignment=right ! \
+                          clockoverlay valignment=bottom halignment=right \
+                          shaded-background=true shading-value=255 ! \
                           interpipesink name=inference_src sync=false" % \
                           (video_dev,labels,model,input_layer,output_layer)
 
