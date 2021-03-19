@@ -37,6 +37,7 @@ class GstDisplay(QWidget):
         # Create config object and load file
         self.config = configparser.ConfigParser()
         self.config.read(config_file_name)
+        self.parent = None
 
         # Get demo settings
         try:
@@ -130,6 +131,7 @@ class GstDisplay(QWidget):
 
     def startRecordingPipeline(self):
         if(self.recording == False):
+            self.parent.toggleRecording()
             self.recording = True
 
             # Get current time for filename
@@ -155,6 +157,7 @@ class GstDisplay(QWidget):
 
     def stopRecordingPipeline(self):
         if(self.recording == True):
+            self.parent.toggleRecording()
             self.recording = False
             self.record_pipe.send_event(Gst.Event.new_eos())
             self.record_pipe.get_bus().timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.EOS)

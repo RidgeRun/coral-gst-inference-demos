@@ -23,8 +23,27 @@ class MainWidget(QWidget):
         # Remove any border keep video coordinates
         vBox = QVBoxLayout()
         vBox.setContentsMargins(0, 0, 0, 0)
+
+        self.recLabel = QLabel("")
+        self.recLabel.setFixedSize(100, 25)
+        self.recLabel.setFont(QFont('Arial', 15))
+        self.recLabel.setStyleSheet("background-color: white;\
+                                     color: red;") 
+
+        vBox.addWidget(self.recLabel)
         vBox.addWidget(self.gstDisplay)
+
+        self.gstDisplay.parent = self
+        self.recording = False
+
         self.setLayout(vBox)
+
+    def toggleRecording(self):
+        self.recording = not self.recording
+        if(self.recording):
+            self.recLabel.setText("Recording")
+        else:
+            self.recLabel.setText("")
 
 class MainWindow(QMainWindow):
     """Main application window"""
