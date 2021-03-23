@@ -166,10 +166,10 @@ class GstDisplay(QWidget):
             of = output_file.split(".")
             filename = of[0] + "_" + dt_string + "." + of[1]
 
-            # Recording pipeline
             recording_pipe = "interpipesrc name=record_sink listen-to=inference_src \
-                              format=3 ! videoconvert ! avenc_mpeg2video ! mpegtsmux ! \
-                              filesink location=%s sync=false" % filename
+                              format=3 ! videoconvert ! x264enc tune=zerolatency \
+                              speed-preset=ultrafast ! h264parse ! \
+                              qtmux ! filesink location=%s sync=false" % filename
             self.record_pipe = Gst.parse_launch(recording_pipe)
 
             self.record_pipe.set_state(Gst.State.PLAYING)
