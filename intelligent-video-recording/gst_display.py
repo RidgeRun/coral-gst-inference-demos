@@ -12,6 +12,7 @@ from datetime import datetime
 import json
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 import time
+import sys
 
 import gi
 gi.require_version("Gst", "1.0")
@@ -46,6 +47,7 @@ class GstDisplay(QWidget):
             input_layer = self.config['DEMO_SETTINGS']['INPUT_LAYER']
             output_layer = self.config['DEMO_SETTINGS']['OUTPUT_LAYER']
             labels = self.parseLabels(self.config['DEMO_SETTINGS']['LABELS'])
+            self.arch = self.config['DEMO_SETTINGS']['ARCH']
             self.classes_id = ast.literal_eval(
                                 self.config['DEMO_SETTINGS']['CLASSES_ID'])
             self.classes_probability = ast.literal_eval(
@@ -58,15 +60,13 @@ class GstDisplay(QWidget):
 
         inference_pipe = "v4l2src device=%s ! videoscale ! videoconvert ! \
                           video/x-raw,width=640,height=480,format=I420 ! \
-                          videoconvert ! tee name=t t. ! videoscale ! \
-                          queue ! net.sink_model t. ! queue ! net.sink_bypass \
-                          mobilenetv2 name=net labels=\"%s\" model-location=%s backend=coral \
-                          backend::input-layer=%s backend::output-layer=%s \
-                          net.src_bypass ! inferenceoverlay ! videoconvert ! \
+                          videoconvert ! inferencebin arch=%s backend=coral \
+                          model-location=%s input-layer=%s output-layer=%s \
+                          labels=\"%s\" overlay=true name=net ! videoconvert ! \
                           clockoverlay valignment=bottom halignment=right \
                           shaded-background=true shading-value=255 ! \
                           interpipesink name=inference_src sync=false" % \
-                          (video_dev,labels,model,input_layer,output_layer)
+                          (video_dev,self.arch,model,input_layer,output_layer,labels)
 
         display_pipe = "interpipesrc name=display_sink listen-to=inference_src ! \
                         videoconvert ! autovideosink name=videosink sync=false"
@@ -87,7 +87,7 @@ class GstDisplay(QWidget):
         self.playing = False
         self.recording = False
         self.togglePipelineState()
-        self.net = self.inference_pipe.get_by_name("net")
+        self.net = self.inference_pipe.get_by_name("arch")
         # Handle new prediction signal
         self.net.connect("new-inference-string", self.newPrediction)
 
@@ -106,29 +106,51 @@ class GstDisplay(QWidget):
     def newPrediction(self, element, meta):
         data = json.loads(meta)
 
-        # Parse class id from prediction
-        class_id = data["classes"][0]["Class"]
-        # Parse probability from prediction. Handle ',' float notation.
-        class_probability = float(data["classes"][0]["Probability"].replace(",","."))
+        classes = []
+        probabilities = []
+
+        if(self.arch == "mobilenetv2ssd"):
+            predictions_list = data["predictions"]
+            for item in predictions_list:
+                # Parse class id from prediction
+                classes.append(item["classes"][0]["Class"])
+                # Parse probability from prediction. Handle ',' float notation.
+                probabilities.append(float(item["classes"][0]["Probability"].replace(",",".")))
+
+        elif(self.arch == "mobilenetv2"):
+            # Parse class id from prediction
+            class_id = data["classes"][0]["Class"]
+            # Parse probability from prediction. Handle ',' float notation.
+            class_probability = float(data["classes"][0]["Probability"].replace(",","."))
+
+            classes.append(class_id)
+            probabilities.append(class_probability)
+        else:
+            print("Arch not supported by the demo. Check config file.")
+            exit(1)
 
         # Detect require class ID and min probability threshold
-        if(class_id in self.classes_id):
-            min_prob = self.classes_probability[self.classes_id.index(class_id)]
+        for i in range(0,len(classes)):
+            class_id = classes[i]
+            class_probability = probabilities[i]
 
-            if(class_probability >= min_prob):
-                if(self.recording == False):
-                    print("Detected. Start recording.")
-                    self.startRecordingPipeline()
-                else:
-                    self.start_recording_time = time.time()
-        else:
-            if(self.recording):
-                self.stop_recording_time = time.time()
-                diff = self.stop_recording_time - self.start_recording_time
+            if(class_id in self.classes_id):
+                min_prob = self.classes_probability[self.classes_id.index(class_id)]
 
-                if(diff >= self.min_recording_time_seconds):
-                    print("No detection. Stop recording.")
-                    self.stopRecordingPipeline()
+                if(class_probability >= min_prob):
+                    if(self.recording == False):
+                        print("Detected. Start recording.")
+                        self.startRecordingPipeline()
+                    else:
+                        self.start_recording_time = time.time()
+            else:
+                if(self.recording):
+                    self.stop_recording_time = time.time()
+                    diff = self.stop_recording_time - self.start_recording_time
+
+                    if(diff >= self.min_recording_time_seconds):
+                        print("No detection. Stop recording.")
+                        self.stopRecordingPipeline()
 
     def startRecordingPipeline(self):
         if(self.recording == False):
