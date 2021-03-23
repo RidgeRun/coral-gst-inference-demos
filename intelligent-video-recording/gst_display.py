@@ -53,6 +53,12 @@ class GstDisplay(QWidget):
                                 self.config['DEMO_SETTINGS']['CLASSES_MIN_PROBABILITY'])
             self.min_recording_time_seconds = int(self.config['DEMO_SETTINGS']\
                                 ['MIN_RECORDING_TIME_IN_SECONDS'])
+
+            if(len(self.classes_id) != len(self.classes_probability)):
+                print(("Classes_ID and Class_Min_Probability list must be of the same"
+                       " lenght. Please review configuration file."))
+                exit(0)
+
         except KeyError:
             print("Config file does not have correct format")
             exit(1)
