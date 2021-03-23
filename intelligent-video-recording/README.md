@@ -13,11 +13,13 @@ The demo uses RidgeRun open source project GstInterpipes. Please make sure you i
 
 * [GStreamer Interpipes](https://developer.ridgerun.com/wiki/index.php?title=GstInterpipe_-_Building_and_Installation_Guide)
 
-The demo requires the model and labels file from Coral which can be downloaded from:
 
-[https://coral.ai/models/](https://coral.ai/models/)
+Update the paths to model and labels file on ``config_<type>.cfg`` file.
+A configuration file is available for each demo <type> (classification, detection):
 
-Update the paths to model and labels file on ``config.cfg`` file. It uses by default ``mobilenet_v2_1.0_224_quant_edgetpu.tflite`` and ``imagenet_labels.txt``.
+* config_detection.cfg: Uses MobileNetV2 + SSD (detection) files available here: [labels](https://developer.ridgerun.com/wiki/index.php?title=Coral_MobilenetV2SSD_COCO_labels) and [models](https://coral.ai/models/).
+In this case, you need to save the labels content into a file named ``coco_labels.txt``.
+* config_detection.cfg: Uses MobileNetV2 (classification) files available here: [labels and models]([https://coral.ai/models/](https://coral.ai/models/))
 
 ## Demo Settings
 
@@ -39,7 +41,12 @@ Several parameters can be configured using ``config.cfg`` file:
 
 ## Demo Execution
 
-Run the following command to start the demo:
+Run the following command to start the demo with detection configuration:
 ```bash
-python3 main.py -c config.cfg
+python3 main.py -c config_detection.cfg
+```
+
+Or to run with classification configuration:
+```bash
+python3 main.py -c config_classification.cfg
 ```
