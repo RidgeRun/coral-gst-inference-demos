@@ -12,7 +12,6 @@ from datetime import datetime
 import json
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 import time
-import sys
 
 import gi
 gi.require_version("Gst", "1.0")
@@ -77,7 +76,7 @@ class GstDisplay(QWidget):
 
         if (not self.display_pipe or not self.inference_pipe):
             print("Unable to create pipeline", file=sys.stderr)
-            sys.exit(1)
+            exit(1)
 
         # Setup pipeline signals and output window
         self.window_id = self.winId()
