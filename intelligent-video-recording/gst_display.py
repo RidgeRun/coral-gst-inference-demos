@@ -103,35 +103,35 @@ class GstDisplay(QWidget):
         return labels
 
     def newPrediction(self, element, meta):
+        # Load JSON meta from GstInference prediction signal
         data = json.loads(meta)
 
         classes = []
         probabilities = []
 
-        if(self.arch == "mobilenetv2ssd"):
-            predictions_list = data["predictions"]
-            for item in predictions_list:
-                # Parse class id from prediction
-                classes.append(item["classes"][0]["Class"])
-                # Parse probability from prediction. Handle ',' float notation.
-                probabilities.append(float(item["classes"][0]["Probability"].replace(",",".")))
-
-        elif(self.arch == "mobilenetv2"):
+        # Detection models use predictions category from JSON meta
+        predictions_list = data["predictions"]
+        for item in predictions_list:
             # Parse class id from prediction
-            class_id = data["classes"][0]["Class"]
+            classes.append(item["classes"][0]["Class"])
             # Parse probability from prediction. Handle ',' float notation.
-            class_probability = float(data["classes"][0]["Probability"].replace(",","."))
+            probabilities.append(float(item["classes"][0]["Probability"].replace(",",".")))
+
+        # Classification models use classes category from JSON meta
+        predictions_list_classes = data["classes"]
+        for item in predictions_list_classes:
+            # Parse class id from prediction
+            class_id = item["Class"]
+            # Parse probability from prediction. Handle ',' float notation.
+            class_probability = float(item["Probability"].replace(",","."))
 
             classes.append(class_id)
             probabilities.append(class_probability)
-        else:
-            print("Arch not supported by the demo. Check config file.")
-            exit(1)
 
         # Detect require class ID and min probability threshold
         for i in range(0,len(classes)):
-            class_id = classes[i]
-            class_probability = probabilities[i]
+            class_id = classes[i] # Model class ID required to start recording
+            class_probability = probabilities[i] # Min probability needed to start recording
 
             if(class_id in self.classes_id):
                 min_prob = self.classes_probability[self.classes_id.index(class_id)]
