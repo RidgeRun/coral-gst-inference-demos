@@ -10,7 +10,8 @@
 
 
 # Load settings
-source config.txt
+CONFIG_FILE=${1?"Usage: ./media_server.sh [CONFIG_FILE]"}
+source $CONFIG_FILE
 
 gstd_not_found_msg="Could not connect to localhost: Connection refused"
 check_gstd=$(gstd-client list_pipelines  2>&1)
@@ -20,6 +21,8 @@ if [[ $check_gstd == $gstd_not_found_msg ]] ; then
     echo "Could not connect to gstd. Please check gstd is up and running."
     exit 1
 fi
+
+need_save_recording="no"
 
 # Create pipelines
 echo "Initializing camera capture"
@@ -36,12 +39,10 @@ location=$INPUT_RTSP_URI ! decodebin ! queue \
 
 echo "Initializing inference capture with model: $MODEL_LOCATION"
 gstd-client pipeline_create inference_pipe interpipesrc name=inf_input \
-listen-to=cam_pipe_src ! videoconvert ! tee name=t t. ! videoscale ! \
-queue ! net.sink_model t. ! queue ! net.sink_bypass mobilenetv2 name=net \
-labels=\"$(awk '{$1=""; printf "\%s\;",$0}' $LABELS)\" model-location=$MODEL_LOCATION backend=coral backend::input-layer=$INPUT_LAYER \
-backend::output-layer=$OUTPUT_LAYER net.src_bypass ! \
-inferenceoverlay ! videoconvert ! \
-interpipesink name=inf_src sync=false
+listen-to=cam_pipe_src ! inferencebin arch=$ARCH backend=coral \
+model-location=$MODEL_LOCATION input-layer=$INPUT_LAYER output-layer=$OUTPUT_LAYER \
+labels="\"$(awk '{$1=""; printf "\%s\;",$0}' $LABELS)\"" overlay=true ! \
+videoconvert ! interpipesink name=inf_src sync=false
 
 echo "Creating display pipeline"
 gstd-client pipeline_create show_pipe interpipesrc name=show_sink listen-to=inf_src \
@@ -49,7 +50,7 @@ gstd-client pipeline_create show_pipe interpipesrc name=show_sink listen-to=inf_
 
 echo "Creating record pipeline"
 gstd-client pipeline_create record_pipe interpipesrc name=record_sink listen-to=inf_src \
-! videoconvert ! x264enc ! h264parse \
+! videoconvert ! x264enc tune=zerolatency speed-preset=ultrafast ! h264parse \
 ! qtmux ! filesink location=$OUTPUT_FILE
 
 echo "Creating streaming pipeline"
@@ -67,10 +68,13 @@ gstd-client pipeline_play show_pipe
 sleep 1 # Wait for pipeline initialization
 
 save_recording (){
-    gstd-client event_eos record_pipe
-    gstd-client bus_filter record_pipe eos
-    gstd-client bus_read record_pipe
-    gstd-client bus_timeout record_pipe 5000000000
+    if [[ $need_save_recording == "yes" ]] ; then
+        gstd-client event_eos record_pipe
+        gstd-client bus_filter record_pipe eos
+        gstd-client bus_read record_pipe
+        gstd-client bus_timeout record_pipe 5000000000
+        need_save_recording="no"
+    fi
 }
 
 free_pipelines (){
@@ -124,6 +128,7 @@ EOF
         gstd-client pipeline_play stream_pipe
     elif [[ $usr_input == "start_recording" ]] ; then
         gstd-client pipeline_play record_pipe
+        need_save_recording="yes"
     elif [[ $usr_input == "stop_streaming" ]] ; then
         gstd-client pipeline_stop stream_pipe
     elif [[ $usr_input == "stop_recording" ]] ; then
