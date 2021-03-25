@@ -12,6 +12,7 @@ from datetime import datetime
 import json
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 import time
+from threading import Timer
 
 import gi
 gi.require_version("Gst", "1.0")
@@ -46,27 +47,32 @@ class GstDisplay(QWidget):
             input_layer = self.config['DEMO_SETTINGS']['INPUT_LAYER']
             output_layer = self.config['DEMO_SETTINGS']['OUTPUT_LAYER']
             labels = self.parseLabels(self.config['DEMO_SETTINGS']['LABELS'])
+            self.arch = self.config['DEMO_SETTINGS']['ARCH']
             self.classes_id = ast.literal_eval(
                                 self.config['DEMO_SETTINGS']['CLASSES_ID'])
             self.classes_probability = ast.literal_eval(
                                 self.config['DEMO_SETTINGS']['CLASSES_MIN_PROBABILITY'])
             self.min_recording_time_seconds = int(self.config['DEMO_SETTINGS']\
                                 ['MIN_RECORDING_TIME_IN_SECONDS'])
+
+            if(len(self.classes_id) != len(self.classes_probability)):
+                print(("Classes_ID and Class_Min_Probability list must be of the same"
+                       " lenght. Please review configuration file."), file = sys.stderr)
+                exit(1)
+
         except KeyError:
-            print("Config file does not have correct format")
+            print("Config file does not have correct format", file = sys.stderr)
             exit(1)
 
         inference_pipe = "v4l2src device=%s ! videoscale ! videoconvert ! \
                           video/x-raw,width=640,height=480,format=I420 ! \
-                          videoconvert ! tee name=t t. ! videoscale ! \
-                          queue ! net.sink_model t. ! queue ! net.sink_bypass \
-                          mobilenetv2 name=net labels=\"%s\" model-location=%s backend=coral \
-                          backend::input-layer=%s backend::output-layer=%s \
-                          net.src_bypass ! inferenceoverlay ! videoconvert ! \
+                          videoconvert ! inferencebin arch=%s backend=coral \
+                          model-location=%s input-layer=%s output-layer=%s \
+                          labels=\"%s\" overlay=true name=net ! videoconvert ! \
                           clockoverlay valignment=bottom halignment=right \
                           shaded-background=true shading-value=255 ! \
                           interpipesink name=inference_src sync=false" % \
-                          (video_dev,labels,model,input_layer,output_layer)
+                          (video_dev,self.arch,model,input_layer,output_layer,labels)
 
         display_pipe = "interpipesrc name=display_sink listen-to=inference_src ! \
                         videoconvert ! autovideosink name=videosink sync=false"
@@ -76,8 +82,8 @@ class GstDisplay(QWidget):
         self.display_pipe = Gst.parse_launch(display_pipe)
 
         if (not self.display_pipe or not self.inference_pipe):
-            print("Unable to create pipeline", file=sys.stderr)
-            sys.exit(1)
+            print("Unable to create pipeline", file = sys.stderr)
+            exit(1)
 
         # Setup pipeline signals and output window
         self.window_id = self.winId()
@@ -87,7 +93,7 @@ class GstDisplay(QWidget):
         self.playing = False
         self.recording = False
         self.togglePipelineState()
-        self.net = self.inference_pipe.get_by_name("net")
+        self.net = self.inference_pipe.get_by_name("arch")
         # Handle new prediction signal
         self.net.connect("new-inference-string", self.newPrediction)
 
@@ -104,36 +110,63 @@ class GstDisplay(QWidget):
         return labels
 
     def newPrediction(self, element, meta):
+        # Load JSON meta from GstInference prediction signal
         data = json.loads(meta)
 
-        # Parse class id from prediction
-        class_id = data["classes"][0]["Class"]
-        # Parse probability from prediction. Handle ',' float notation.
-        class_probability = float(data["classes"][0]["Probability"].replace(",","."))
+        classes = []
+        probabilities = []
+
+        # Each time a new prediction is done by GstInference it
+        # generates a signal parsed as a JSON 
+        # See: 
+        # https://developer.ridgerun.com/wiki/index.php?title=GstInference/Metadatas/GstInferenceMeta
+
+        # Detection models use predictions category from JSON meta
+        predictions_list = data["predictions"]
+        for item in predictions_list:
+            # Parse class id from prediction
+            classes.append(item["classes"][0]["Class"])
+            # Parse probability from prediction. Handle ',' float notation.
+            probabilities.append(float(item["classes"][0]["Probability"].replace(",",".")))
+
+        # Classification models use classes category from JSON meta
+        predictions_list_classes = data["classes"]
+        for item in predictions_list_classes:
+            # Parse class id from prediction
+            class_id = item["Class"]
+            # Parse probability from prediction. Handle ',' float notation.
+            class_probability = float(item["Probability"].replace(",","."))
+
+            classes.append(class_id)
+            probabilities.append(class_probability)
 
         # Detect require class ID and min probability threshold
-        if(class_id in self.classes_id):
-            min_prob = self.classes_probability[self.classes_id.index(class_id)]
+        for i in range(0,len(classes)):
+            class_id = classes[i] # Model class ID required to start recording
+            class_probability = probabilities[i] # Min probability needed to start recording
 
-            if(class_probability >= min_prob):
-                if(self.recording == False):
-                    print("Detected. Start recording.")
-                    self.startRecordingPipeline()
-                else:
-                    self.start_recording_time = time.time()
-        else:
-            if(self.recording):
-                self.stop_recording_time = time.time()
-                diff = self.stop_recording_time - self.start_recording_time
+            if(class_id in self.classes_id):
+                min_prob = self.classes_probability[self.classes_id.index(class_id)]
 
-                if(diff >= self.min_recording_time_seconds):
-                    print("No detection. Stop recording.")
-                    self.stopRecordingPipeline()
+                if(class_probability >= min_prob):
+                    if(self.recording == False):
+                        print("Detected. Start recording.")
+                        self.startRecordingPipeline()
+                    else:
+                        self.startTimer()
+
+    def startTimer(self):
+        if(self.recording):
+            self.timer.cancel()
+
+        # Add timer to handle stop recording
+        self.timer = Timer(self.min_recording_time_seconds,
+                           self.stopRecordingPipeline)
+        self.timer.start()
 
     def startRecordingPipeline(self):
         if(self.recording == False):
             self.parent.toggleRecording()
-            self.recording = True
 
             # Get current time for filename
             now = datetime.now()
@@ -144,20 +177,21 @@ class GstDisplay(QWidget):
             of = output_file.split(".")
             filename = of[0] + "_" + dt_string + "." + of[1]
 
-            # Recording pipeline
             recording_pipe = "interpipesrc name=record_sink listen-to=inference_src \
-                              format=3 ! videoconvert ! avenc_mpeg2video ! mpegtsmux ! \
-                              filesink location=%s sync=false" % filename
+                              format=3 ! videoconvert ! x264enc tune=zerolatency \
+                              speed-preset=ultrafast ! h264parse ! \
+                              qtmux ! filesink location=%s sync=false" % filename
             self.record_pipe = Gst.parse_launch(recording_pipe)
 
             self.record_pipe.set_state(Gst.State.PLAYING)
             self.record_pipe.get_state(self.STATE_CHANGE_TIMEOUT)
 
-            # Record start time
-            self.start_recording_time = time.time()
+            self.startTimer()
+            self.recording = True
 
     def stopRecordingPipeline(self):
         if(self.recording == True):
+            print("No detection. Stop recording.")
             self.parent.toggleRecording()
             self.recording = False
             self.record_pipe.send_event(Gst.Event.new_eos())
@@ -201,7 +235,7 @@ class GstDisplay(QWidget):
             _, width = caps.get_structure(0).get_int("width")
             _, height = caps.get_structure(0).get_int("height")
         else:
-            print("Unable to get video resolution", file=sys.stderr)
+            print("Unable to get video resolution", file = sys.stderr)
             self.stopPipeline()
             sys.exit(1)
         return width, height
