@@ -12,6 +12,7 @@ from datetime import datetime
 import json
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 import time
+from threading import Timer
 
 import gi
 gi.require_version("Gst", "1.0")
@@ -152,20 +153,20 @@ class GstDisplay(QWidget):
                         print("Detected. Start recording.")
                         self.startRecordingPipeline()
                     else:
-                        self.start_recording_time = time.time()
-            else:
-                if(self.recording):
-                    self.stop_recording_time = time.time()
-                    diff = self.stop_recording_time - self.start_recording_time
+                        self.startTimer()
 
-                    if(diff >= self.min_recording_time_seconds):
-                        print("No detection. Stop recording.")
-                        self.stopRecordingPipeline()
+    def startTimer(self):
+        if(self.recording):
+            self.timer.cancel()
+
+        # Add timer to handle stop recording
+        self.timer = Timer(self.min_recording_time_seconds,
+                           self.stopRecordingPipeline)
+        self.timer.start()
 
     def startRecordingPipeline(self):
         if(self.recording == False):
             self.parent.toggleRecording()
-            self.recording = True
 
             # Get current time for filename
             now = datetime.now()
@@ -185,11 +186,12 @@ class GstDisplay(QWidget):
             self.record_pipe.set_state(Gst.State.PLAYING)
             self.record_pipe.get_state(self.STATE_CHANGE_TIMEOUT)
 
-            # Record start time
-            self.start_recording_time = time.time()
+            self.startTimer()
+            self.recording = True
 
     def stopRecordingPipeline(self):
         if(self.recording == True):
+            print("No detection. Stop recording.")
             self.parent.toggleRecording()
             self.recording = False
             self.record_pipe.send_event(Gst.Event.new_eos())
