@@ -14,11 +14,11 @@ The demo uses RidgeRun open source project GstInterpipes. Please make sure you i
 * [GStreamer Interpipes](https://developer.ridgerun.com/wiki/index.php?title=GstInterpipe_-_Building_and_Installation_Guide)
 
 
-Update the paths to model and labels file on ``config_<type>.cfg`` file.
+Update the paths for the model and labels file on ``config_<type>.cfg`` file.
 A configuration file is available for each demo <type> (classification, detection):
 
 * config_detection.cfg: Uses MobileNetV2 + SSD (detection) files available here: [labels](https://developer.ridgerun.com/wiki/index.php?title=Coral_MobilenetV2SSD_COCO_labels) and [models](https://coral.ai/models/).
-In this case, you need to save the labels content into a file named ``coco_labels.txt``.
+In this case, you need to save the labels content into a file called ``coco_labels.txt``.
 * config_detection.cfg: Uses MobileNetV2 (classification) files available here: [labels and models]([https://coral.ai/models/](https://coral.ai/models/))
 
 ## Demo Settings
@@ -38,6 +38,30 @@ Several parameters can be configured using ``config.cfg`` file:
 * CLASSES_ID = List of classes IDs to trigger recording. (Example: [762,468])
 * CLASSES_MIN_PROBABILITY = List of min probability to trigger recording for each ID (Example: [0.75,0.80])
 * MIN_RECORDING_TIME_IN_SECONDS = Min recording seconds to wait for ID to be detected before saving video.
+
+### Classes ID
+The CLASSES_ID list is composed by the class id from the labels file being used by the demo. To search for a specific label look for the tag name on the labels files, such as Person, Airplane, Remote, etc and replace it as needed. Some common labels are seen on the next tables:
+
+Coco Labels:
+
+| Label Name     | Class ID |
+|----------------|----------|
+|     Person     |     0    |
+|       Car      |     2    |
+|     Bottle     |    43    |
+|      Chair     |    61    |
+| Remote Control |    74    |
+
+ImageNet Labels:
+
+| Label Name        | Class ID |
+|-------------------|----------|
+| Computer keyboard |    509   |
+|  Passenger Car    |    706   |
+|  Water bottle     |    899   |
+|      Radio        |    755   |
+| Remote Control    |    762   |
+
 
 ## Demo Execution
 
