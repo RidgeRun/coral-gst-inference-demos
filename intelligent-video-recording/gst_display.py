@@ -115,6 +115,11 @@ class GstDisplay(QWidget):
         classes = []
         probabilities = []
 
+        # Each time a new prediction is done by GstInference it
+        # generates a signal parsed as a JSON 
+        # See: 
+        # https://developer.ridgerun.com/wiki/index.php?title=GstInference/Metadatas/GstInferenceMeta
+
         # Detection models use predictions category from JSON meta
         predictions_list = data["predictions"]
         for item in predictions_list:
