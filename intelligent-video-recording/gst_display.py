@@ -56,11 +56,11 @@ class GstDisplay(QWidget):
 
             if(len(self.classes_id) != len(self.classes_probability)):
                 print(("Classes_ID and Class_Min_Probability list must be of the same"
-                       " lenght. Please review configuration file."))
-                exit(0)
+                       " lenght. Please review configuration file."), file = sys.stderr)
+                exit(1)
 
         except KeyError:
-            print("Config file does not have correct format")
+            print("Config file does not have correct format", file = sys.stderr)
             exit(1)
 
         inference_pipe = "v4l2src device=%s ! videoscale ! videoconvert ! \
@@ -81,7 +81,7 @@ class GstDisplay(QWidget):
         self.display_pipe = Gst.parse_launch(display_pipe)
 
         if (not self.display_pipe or not self.inference_pipe):
-            print("Unable to create pipeline", file=sys.stderr)
+            print("Unable to create pipeline", file = sys.stderr)
             exit(1)
 
         # Setup pipeline signals and output window
@@ -233,7 +233,7 @@ class GstDisplay(QWidget):
             _, width = caps.get_structure(0).get_int("width")
             _, height = caps.get_structure(0).get_int("height")
         else:
-            print("Unable to get video resolution", file=sys.stderr)
+            print("Unable to get video resolution", file = sys.stderr)
             self.stopPipeline()
             sys.exit(1)
         return width, height
