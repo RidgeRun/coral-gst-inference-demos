@@ -69,8 +69,6 @@ class GstDisplay(QWidget):
                           videoconvert ! inferencebin arch=%s backend=coral \
                           model-location=%s input-layer=%s output-layer=%s \
                           labels=\"%s\" overlay=true name=net ! videoconvert ! \
-                          clockoverlay valignment=bottom halignment=right \
-                          shaded-background=true shading-value=255 ! \
                           interpipesink name=inference_src sync=false" % \
                           (video_dev,self.arch,model,input_layer,output_layer,labels)
 
