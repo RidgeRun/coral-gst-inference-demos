@@ -4,7 +4,7 @@
 
 The demo aims to be a reference intelligent video recording security camera. The configuration file (''config.cfg'') allows to add a list of classes ID from the model being used.
 
-As seen on the following image when a defined class ID is detected it will start recording. Default uses class ID 762 (Remote Control). If the class ID is still being detected it will continue recording, if the class ID does not match it will wait ``MIN_RECORDING_TIME_IN_SECONDS`` before saving the video. Multiple classes ID can be detected at once. If after saving the video a new valid detection appears a new video file will be created.
+As seen on the following image when a defined class ID is detected it will start recording. Default uses class ``Remote Control``. If the class ID is still being detected it will continue recording, if the class ID does not match it will wait ``MIN_RECORDING_TIME_IN_SECONDS`` before saving the video. Multiple classes ID can be detected at once. If after saving the video a new valid detection appears a new video file will be created.
 
 ![Demo Pipeline Structure](rsrc/demo.png?raw=true "Demo Pipeline Structure")
 
@@ -12,14 +12,14 @@ As seen on the following image when a defined class ID is detected it will start
 The demo uses RidgeRun open source project GstInterpipes. Please make sure you install and setup the following dependencies before running the demo
 
 * [GStreamer Interpipes](https://developer.ridgerun.com/wiki/index.php?title=GstInterpipe_-_Building_and_Installation_Guide)
-
+* [PyQt5](https://pypi.org/project/PyQt5/)
 
 Update the paths for the model and labels file on ``config_<type>.cfg`` file.
 A configuration file is available for each demo <type> (classification, detection):
 
 * config_detection.cfg: Uses MobileNetV2 + SSD (detection) files available here: [labels](https://developer.ridgerun.com/wiki/index.php?title=Coral_MobilenetV2SSD_COCO_labels) and [models](https://coral.ai/models/).
 In this case, you need to save the labels content into a file called ``coco_labels.txt``.
-* config_detection.cfg: Uses MobileNetV2 (classification) files available here: [labels and models]([https://coral.ai/models/](https://coral.ai/models/))
+* config_detection.cfg: Uses MobileNetV2 (classification) files available here: [labels and models](https://coral.ai/models/).
 
 ## Demo Settings
 
