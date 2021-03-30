@@ -12,7 +12,6 @@ As seen on the following image when a defined class ID is detected it will start
 The demo uses RidgeRun open source project GstInterpipes. Please make sure you install and setup the following dependencies before running the demo
 
 * [GStreamer Interpipes](https://developer.ridgerun.com/wiki/index.php?title=GstInterpipe_-_Building_and_Installation_Guide)
-* [PyQt5](https://pypi.org/project/PyQt5/)
 
 Update the paths for the model and labels file on ``config_<type>.cfg`` file.
 A configuration file is available for each demo <type> (classification, detection):

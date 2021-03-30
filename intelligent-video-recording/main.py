@@ -10,7 +10,7 @@ import getopt
 import os
 import sys
 
-from main_window import *
+from gst_display import *
 
 
 if __name__ == "__main__":
@@ -41,7 +41,6 @@ if __name__ == "__main__":
     if (config_file_name == ""):
         help()
 
-    MainEvntHndlr = QApplication([])
-    MainApp = MainWindow(config_file_name)
-    MainApp.show()
-    MainEvntHndlr.exec()
+    loop=GLib.MainLoop()
+    MainApp = GstDisplay(config_file_name, loop)
+    loop.run()
