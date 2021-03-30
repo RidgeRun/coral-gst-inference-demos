@@ -11,6 +11,7 @@ import configparser
 from datetime import datetime
 import json
 import time
+import os
 from threading import Timer
 
 import gi
@@ -36,9 +37,7 @@ class GstDisplay():
         try:
             video_dev = self.config['DEMO_SETTINGS']['CAMERA_DEVICE']
             model = self.config['DEMO_SETTINGS']['MODEL_LOCATION']
-            input_layer = self.config['DEMO_SETTINGS']['INPUT_LAYER']
-            output_layer = self.config['DEMO_SETTINGS']['OUTPUT_LAYER']
-            labels = self.parseLabels(self.config['DEMO_SETTINGS']['LABELS'])
+            labels = self.parseLabels(self.config['DEMO_SETTINGS']['LABELS_LOCATION'])
             self.arch = self.config['DEMO_SETTINGS']['ARCH']
             self.classes_id = ast.literal_eval(
                                 self.config['DEMO_SETTINGS']['CLASSES_ID'])
@@ -47,6 +46,10 @@ class GstDisplay():
             self.min_recording_time_seconds = int(self.config['DEMO_SETTINGS']\
                                 ['MIN_RECORDING_TIME_IN_SECONDS'])
             videosink = self.config['DEMO_SETTINGS']['VIDEOSINK']
+            self.rec_directory = self.config['DEMO_SETTINGS']['REC_DIRECTORY']
+            if not os.path.isdir(self.rec_directory):
+                print ("Recording directory given doesn't exist. Using current path...")
+                self.rec_directory = os.getcwd()
 
             if(len(self.classes_id) != len(self.classes_probability)):
                 print(("Classes_ID and Class_Min_Probability list must be of the same"
@@ -60,10 +63,10 @@ class GstDisplay():
         inference_pipe = "v4l2src device=%s ! videoscale ! videoconvert ! \
                           video/x-raw,width=640,height=480,format=I420 ! \
                           videoconvert ! inferencebin arch=%s backend=coral \
-                          model-location=%s input-layer=%s output-layer=%s \
+                          model-location=%s \
                           labels=\"%s\" overlay=true name=net ! videoconvert ! \
                           interpipesink forward-events=true forward-eos=true name=inference_src sync=false" % \
-                          (video_dev,self.arch,model,input_layer,output_layer,labels)
+                          (video_dev,self.arch,model,labels)
 
         display_pipe = "interpipesrc name=display_sink listen-to=inference_src ! \
                         videoconvert ! %s name=videosink sync=false" % (videosink)
@@ -159,9 +162,7 @@ class GstDisplay():
             dt_string = now.strftime("%d-%m-%Y_%H_%M_%S")
 
             # Build filename with date format
-            output_file = self.config['DEMO_SETTINGS']['OUTPUT_FILE']
-            of = output_file.split(".")
-            filename = of[0] + "_" + dt_string + "." + of[1]
+            filename = self.rec_directory + "/" + "intelligent_recording_" + dt_string + ".mp4"
 
             recording_pipe = "interpipesrc name=record_sink listen-to=inference_src \
                               format=3 ! videoconvert ! x264enc tune=zerolatency \
