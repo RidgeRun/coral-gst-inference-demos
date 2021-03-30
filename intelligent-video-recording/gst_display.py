@@ -6,13 +6,14 @@ it under the terms of the GNU General Public License version 2 as
 published by the Free Software Foundation.
 """
 
+from datetime import datetime
+from threading import Timer
+
 import ast
 import configparser
-from datetime import datetime
 import json
 import time
 import os
-from threading import Timer
 
 import gi
 gi.require_version("Gst", "1.0")
@@ -47,8 +48,9 @@ class GstDisplay():
                                 ['MIN_RECORDING_TIME_IN_SECONDS'])
             videosink = self.config['DEMO_SETTINGS']['VIDEOSINK']
             self.rec_directory = self.config['DEMO_SETTINGS']['REC_DIRECTORY']
+
             if not os.path.isdir(self.rec_directory):
-                print ("Recording directory given doesn't exist. Using current path...")
+                print ("Given recording directory doesn't exist. Using current path...")
                 self.rec_directory = os.getcwd()
 
             if(len(self.classes_id) != len(self.classes_probability)):
@@ -199,13 +201,13 @@ class GstDisplay():
             self.stopPipeline()
 
     def togglePipelineState(self):
-        """Change the pipeline from play to pause and from pause to play"""
+        """Change the pipeline from play to null and from null to play"""
         if (not self.playing):
             self.inference_pipe.set_state(Gst.State.PLAYING)
             self.display_pipe.set_state(Gst.State.PLAYING)
         else:
-            self.inference_pipe.set_state(Gst.State.PAUSED)
-            self.display_pipe.set_state(Gst.State.PAUSED)
+            self.inference_pipe.set_state(Gst.State.NULL)
+            self.display_pipe.set_state(Gst.State.NULL)
         
         self.inference_pipe.get_state(self.STATE_CHANGE_TIMEOUT)
         self.display_pipe.get_state(self.STATE_CHANGE_TIMEOUT)
@@ -214,7 +216,6 @@ class GstDisplay():
     def stopPipeline(self):
         """Stop the pipeline by setting it to null state"""
         self.stopRecordingPipeline()
+        self.togglePipelineState()
         self.bus.remove_signal_watch()
-        self.display_pipe.set_state(Gst.State.NULL)
-        self.display_pipe.get_state(self.STATE_CHANGE_TIMEOUT)
         self.loop.quit()
