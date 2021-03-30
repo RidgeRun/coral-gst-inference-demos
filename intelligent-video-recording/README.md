@@ -27,8 +27,6 @@ Please review labels file being used to find the class ID needed to be used. Def
 Several parameters can be configured using ``config.cfg`` file:
 
 * CAMERA_DEVICE: Camera device to be used as input video. (Example: /dev/video0)
-* CAMERA_DEVICE_WIDTH = Camera device width. (Example: 1280)
-* CAMERA_DEVICE_HEIGHT = Camera device height. (Example: 720)
 * MODEL_LOCATION = Absolute path to the model location.
 * INPUT_LAYER = Layer to be used as input for the model.
 * OUTPUT_LAYER = Layer to be used as output for the model.
@@ -37,6 +35,7 @@ Several parameters can be configured using ``config.cfg`` file:
 * CLASSES_ID = List of classes IDs to trigger recording. (Example: [762,468])
 * CLASSES_MIN_PROBABILITY = List of min probability to trigger recording for each ID (Example: [0.75,0.80])
 * MIN_RECORDING_TIME_IN_SECONDS = Min recording seconds to wait for ID to be detected before saving video.
+* VIDEOSINK = GStreamer videosink element to use
 
 ### Classes ID
 The CLASSES_ID list is composed by the class id from the labels file being used by the demo. To search for a specific label look for the tag name on the labels files, such as Person, Airplane, Remote, etc and replace it as needed. Some common labels are seen on the next tables:
@@ -60,6 +59,13 @@ ImageNet Labels:
 |  Water bottle     |    899   |
 |      Radio        |    755   |
 | Remote Control    |    762   |
+
+
+### VIDEOSINK
+Videosink option will depend on the hardware being used. Recommended configurations are:
+
+* Devkit: ``VIDEOSINK=waylandsink fullscreen=false``
+* USB Accelerator: ``VIDEOSINK=xvimagesink``
 
 
 ## Demo Execution
