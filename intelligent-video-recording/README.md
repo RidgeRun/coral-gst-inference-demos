@@ -28,10 +28,8 @@ Several parameters can be configured using ``config.cfg`` file:
 
 * CAMERA_DEVICE: Camera device to be used as input video. (Example: /dev/video0)
 * MODEL_LOCATION = Absolute path to the model location.
-* INPUT_LAYER = Layer to be used as input for the model.
-* OUTPUT_LAYER = Layer to be used as output for the model.
-* LABELS = Path to the labels file.
-* OUTPUT_FILE = Path to save the recording. Demo only support mp4 files.
+* LABELS_LOCATION = Path to the labels file.
+* REC_DIRECTORY = Path to save the recordings files. Demo only support mp4 files.
 * CLASSES_ID = List of classes IDs to trigger recording. (Example: [762,468])
 * CLASSES_MIN_PROBABILITY = List of min probability to trigger recording for each ID (Example: [0.75,0.80])
 * MIN_RECORDING_TIME_IN_SECONDS = Min recording seconds to wait for ID to be detected before saving video.
