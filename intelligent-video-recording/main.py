@@ -43,4 +43,7 @@ if __name__ == "__main__":
 
     loop=GLib.MainLoop()
     MainApp = GstDisplay(config_file_name, loop)
-    loop.run()
+    try:
+        loop.run()
+    except:
+        MainApp.stopPipeline()
